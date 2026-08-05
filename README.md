@@ -505,6 +505,29 @@ ERROR: docker: 'docker buildx build' requires 1 argument
 - 확인: PowerShell에서 `ls -la` 실행 시 `NamedParameterNotFound` 오류가 발생
 - 해결: PowerShell에서 지원하는 명령인 `dir` 또는 `dir -Force`를 사용하여 파일 목록을 확인
 
+
+## 사례 3 포트 충돌 오류
+
+- 문제: 컨테이너 실행 시 포트가 이미 사용 중이라는 오류가 발생하였다.
+- 원인: 호스트 PC에서 동일한 포트를 사용하는 컨테이너 또는 프로그램이 이미 실행 중이었음
+- 확인: Windows에서 포트 사용 여부를 확인함
+
+```powershell
+netstat -ano | findstr :8080ㄴ
+```
+
+또는 Docker 컨테이너를 확인함
+
+```powershell
+docker ps
+```
+
+- 해결: 기존 컨테이너를 중지하거나 삭제한 뒤 다시 실행
+```powershell
+docker stop mission1-container
+docker rm mission1-container
+```
+
 ---
 
 # 14. 1주차 미션 개념 정리
@@ -512,9 +535,18 @@ ERROR: docker: 'docker buildx build' requires 1 argument
 ## 14-1. 절대경로와 상대경로
 
 - **절대경로(Absolute Path)** : 파일이나 폴더의 전체 위치를 처음부터 끝까지 나타내는 경로
-  - 예) `C:\Users\gaban\Misson-1\app\index.html`
+  예) `C:\Users\gaban\Misson-1\app\index.html`
+
 - **상대경로(Relative Path)** : 현재 작업 중인 위치를 기준으로 파일이나 폴더의 위치를 나타내는 경로
-  - 예) `app\index.html`
+  예) `app\index.html`
+
+- 사용 기준 및 재현성
+ **호스트(Windows)** 에서는 프로젝트 내부 파일을 참조할 때 상대경로(`app/index.html`)를 사용하는 것이 좋다. 프로젝트를 다른 컴퓨터로 옮겨도 동일한 구조를 유지할 수 있어 재현성이 높다.
+
+ **컨테이너 내부**에서는 실행 위치가 고정되어 있으므로 `/usr/share/nginx/html/index.html`과 같은 절대경로를 주로 사용한다.
+
+이번 실습에서도 호스트에서는 상대경로를 사용하고 Dockerfile에서는 컨테이너 내부 절대경로를 사용하여 환경이 달라도 동일한 결과를 재현할 수 있도록 구성하였다.
+
 
 ## 14-2. 파일 권한 (r / w / x)
 
@@ -546,6 +578,19 @@ Linux에서는 파일과 디렉터리의 접근 권한을 다음과 같이 구�
 
 Dockerfile은 Docker 이미지를 생성하기 위한 설정 파일이다.
 
+```powershell
+docker build
+```
+
+Docker Image는 컨테이너를 생성하기 위한 **읽기 전용(Read-only) 템플릿**이다.
+앱 실행에 필요한 프로그램, 라이브러리, 설정 파일 등을 포함하며, 한 번 생성된 이미지는 변경되지 않는다. (여러 컨테이너에서 공통 사용, 변경x)
+
+```powershell
+docker run
+```
+
+Docker Container는 이미지를 기반으로 실행되는 **실행 환경(Runtime)** 이다. 컨테이너 내부에서 파일을 수정하거나 프로그램을 실행할 수 있지만, 이러한 변경 사항은 해당 컨테이너에만 적용된다. 이미지는 그대로 유지되며, 새로운 컨테이너를 생성하면 원래 이미지 상태로 다시 시작된다.(삭제 후 재생성 가능, 실행 중 변경 가능)
+
 
 ## 14-5. 포트 매핑 (Port Mapping)
 
@@ -570,9 +615,17 @@ http://localhost:8080
 
 으로 웹 페이지에 접속할 수 있음
 
+- **네트워크 네임스페이스와 포트 매핑**
+Docker 컨테이너는 각각 독립된 **네트워크 네임스페이스(Network Namespace)** 를 사용한다. 따라서 컨테이너 내부의 포트는 호스트 PC와 분리되어 있으며 외부에서는 직접 접근할 수 없다.
 
-## 14-6. Docker Volume
+`docker run -p 8080:80` 명령은 호스트의 8080 포트를 컨테이너의 80 포트와 연결하여 외부에서 웹 서버에 접근할 수 있도록 한다.
 
+
+- **보안**
+모든 포트를 외부에 공개하지 않고 필요한 포트만 `-p` 옵션으로 공개하면 불필요한 접근을 줄일 수 있어 보안상 안전하다.
+
+
+## 14-6. Docker Volume**
 Docker Volume은 **컨테이너와 독립적으로 데이터를 저장하는 저장 공간**을 의미
 
 컨테이너를 삭제하더라도 Volume은 유지되므로 데이터를 계속 사용할 수 있음
