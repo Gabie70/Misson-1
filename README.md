@@ -247,6 +247,8 @@ docker ps -a
 **설명:** (이미지) 로컬 시스템에 저장된 Docker 이미지를 확인하였다. Ubuntu 이미지가 정상적으로 저장되어 있는 것을 확인하였다.
 (컨테이너) 실행 중인 Docker 컨테이너 목록을 확인했다.
 
+(ps -a는 종료된 컨테이너까지 모두 확인 가능 / ps는 실행중인 것만 확인 가능)
+
 ![alt text](<Screenshots/7-3. docker 이미지 확인.png>)
 
 ![alt text](<Screenshots/7-3. docker 컨테이너 확인.png>)
